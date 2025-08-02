@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Guide: QLoRA Fine-Tuning & Deployment</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Calm Harmony -->
+    <!-- Application Structure Plan: The application is structured as a top-down narrative journey, guiding the user through the five core stages of the MLOps lifecycle presented in the lab guide: Setup, Data, Tuning, Evaluation, and Deployment. This thematic, linear flow was chosen for its intuitiveness, mirroring the user's own progression through the lab. Key interactions include toggling between different deployment options and hovering over charts for detailed data. This structure helps users synthesize the process by breaking it into manageable, interconnected chapters, making the complex workflow easy to follow and understand. -->
+    <!-- Visualization & Content Choices: 
+        - Report Info: Overall Workflow -> Goal: Organize -> Viz/Method: HTML/CSS Flowchart -> Interaction: Static visual anchor -> Justification: Provides a clear, high-level map of the entire process at the beginning.
+        - Report Info: Trainable vs. Total Parameters -> Goal: Compare/Inform -> Viz/Method: Chart.js Donut Chart -> Interaction: Hover for exact numbers -> Justification: A donut chart is the most effective way to visually represent a part-to-whole relationship, dramatically highlighting the efficiency of QLoRA.
+        - Report Info: Training Loss over Steps -> Goal: Change -> Viz/Method: Chart.js Line Chart -> Interaction: Hover for loss at specific steps -> Justification: A line chart is the standard and most intuitive way to show a trend over a continuous variable like training steps.
+        - Report Info: Base vs. Fine-Tuned Model Output -> Goal: Compare -> Viz/Method: Side-by-side HTML text blocks -> Interaction: Static comparison -> Justification: Direct textual comparison is the most effective way to evaluate the qualitative difference in model responses.
+        - Report Info: Deployment Options -> Goal: Compare/Organize -> Viz/Method: Interactive HTML/CSS tabs -> Interaction: Click to switch between Dev and Prod views -> Justification: An interactive toggle allows for a direct, focused comparison of the two deployment methods without cluttering the UI.
+        - Library/Method: All charts use Chart.js (Canvas). All diagrams use HTML/CSS with Tailwind.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F8F7F4; /* Warm Neutral Background */
+            color: #4A4A4A;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+        .nav-item {
+            cursor: pointer;
+            padding: 8px 16px;
+            border-radius: 9999px;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+        .nav-item.active {
+            background-color: #A0AEC0; /* Subtle Accent */
+            color: #FFFFFF;
+        }
+        .nav-item:hover:not(.active) {
+            background-color: #E2E8F0;
+        }
+        .flow-step {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .flow-step:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .tab-button {
+            transition: all 0.3s ease;
+        }
+        .tab-button.active {
+            background-color: #6B7280;
+            color: white;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <div class="container mx-auto p-4 sm:p-6 md:p-8 max-w-7xl">
+
+        <!-- Header -->
+        <header class="text-center my-12">
+            <h1 class="text-4xl md:text-5xl font-bold text-[#333333] mb-3">The QLoRA Journey</h1>
+            <p class="text-xl text-gray-600">An Interactive Guide to Fine-Tuning and Deploying LLMs</p>
+        </header>
+
+        <!-- Sticky Navigation -->
+        <nav id="navbar" class="sticky top-0 z-50 bg-[#F8F7F4]/80 backdrop-blur-md py-4 mb-12 flex items-center justify-center rounded-full shadow-sm">
+            <div class="flex space-x-2 sm:space-x-4">
+                <a href="#setup" class="nav-item">Setup</a>
+                <a href="#data" class="nav-item">Data</a>
+                <a href="#tuning" class="nav-item">Tuning</a>
+                <a href="#evaluation" class="nav-item">Evaluation</a>
+                <a href="#deployment" class="nav-item">Deployment</a>
+            </div>
+        </nav>
+
+        <!-- Main Content Grid -->
+        <main class="space-y-24">
+
+            <!-- Section 1: Setup -->
+            <section id="setup">
+                <div class="text-center mb-10">
+                    <h2 class="text-3xl font-bold text-[#333333]">Stage 1: Preparing the Environment</h2>
+                    <p class="mt-2 text-lg text-gray-600 max-w-3xl mx-auto">Every successful project begins with a solid foundation. In this first stage, we configure our cloud-based laboratory—a Google Colab notebook—with all the necessary tools and authentications to handle a powerful language model.</p>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
+                    <div class="bg-white p-6 rounded-lg shadow-md flow-step">
+                        <div class="text-4xl mb-3">🖥️</div>
+                        <h3 class="text-xl font-semibold text-gray-800">Configure Colab</h3>
+                        <p class="text-gray-600 mt-2">Select a T4 GPU runtime to provide the necessary computational power for model training.</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow-md flow-step">
+                        <div class="text-4xl mb-3">📦</div>
+                        <h3 class="text-xl font-semibold text-gray-800">Install Libraries</h3>
+                        <p class="text-gray-600 mt-2">Install specialized Python packages like `unsloth`, `transformers`, and `bitsandbytes` to enable efficient fine-tuning.</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow-md flow-step">
+                        <div class="text-4xl mb-3">🔑</div>
+                        <h3 class="text-xl font-semibold text-gray-800">Authenticate</h3>
+                        <p class="text-gray-600 mt-2">Log in to Hugging Face to gain access to the base model and prepare to save our work.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section 2: Data -->
+            <section id="data">
+                <div class="text-center mb-10">
+                    <h2 class="text-3xl font-bold text-[#333333]">Stage 2: Acquiring and Preparing Data</h2>
+                    <p class="mt-2 text-lg text-gray-600 max-w-3xl mx-auto">A model is only as good as the data it's trained on. Here, we load a curated dataset and meticulously format it to match the structure the Llama 3 model expects, ensuring an effective learning process.</p>
+                </div>
+                <div class="bg-white rounded-lg shadow-lg p-8">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                        <div>
+                            <h3 class="text-2xl font-semibold text-gray-800 mb-4">From Raw Text to Chat Template</h3>
+                            <p class="text-gray-600 mb-4">We start with a simple `instruction ### response` format. This is human-readable but not what the model understands. We apply a "chat template" that wraps the text with special tokens the model was pre-trained on.</p>
+                            <p class="text-gray-600 font-semibold">This transformation is critical for successful fine-tuning.</p>
+                        </div>
+                        <div class="space-y-4">
+                            <div class="bg-gray-100 p-4 rounded-md">
+                                <p class="font-mono text-sm text-gray-500 mb-2">Before Formatting:</p>
+                                <p class="font-mono text-sm text-gray-800">### Instruction:<br>Explain photosynthesis.<br>### Response:<br>Photosynthesis is...</p>
+                            </div>
+                            <div class="text-center text-2xl font-bold text-[#A0AEC0]">↓</div>
+                            <div class="bg-gray-100 p-4 rounded-md border-2 border-[#A0AEC0]">
+                                <p class="font-mono text-sm text-gray-500 mb-2">After Formatting:</p>
+                                <p class="font-mono text-sm text-gray-800"><span class="text-blue-600">&lt;|start_header_id|&gt;</span>user<span class="text-blue-600">&lt;|end_header_id|&gt;</span><br>Explain photosynthesis.<span class="text-blue-600">&lt;|eot_id|&gt;</span><br><span class="text-blue-600">&lt;|start_header_id|&gt;</span>assistant<span class="text-blue-600">&lt;|end_header_id|&gt;</span><br>Photosynthesis is...<span class="text-blue-600">&lt;|eot_id|&gt;</span></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section 3: Tuning -->
+            <section id="tuning">
+                <div class="text-center mb-10">
+                    <h2 class="text-3xl font-bold text-[#333333]">Stage 3: The QLoRA Fine-Tuning Process</h2>
+                    <p class="mt-2 text-lg text-gray-600 max-w-3xl mx-auto">This is the core of the lab. We use QLoRA to efficiently train our model. We'll visualize the incredible parameter efficiency and track the model's learning progress by watching the training loss decrease.</p>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div class="bg-white rounded-lg shadow-lg p-8">
+                        <h3 class="text-2xl font-bold text-center mb-4 text-gray-800">Parameter Efficiency</h3>
+                        <p class="text-center text-gray-600 mb-4">Instead of training all 8 billion parameters, QLoRA freezes the base model and trains only a tiny fraction of new "adapter" layers. This chart shows we're modifying less than 1% of the total model.</p>
+                        <div class="chart-container h-80">
+                            <canvas id="qloraDonutChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-lg shadow-lg p-8">
+                        <h3 class="text-2xl font-bold text-center mb-4 text-gray-800">Training Progress</h3>
+                        <p class="text-center text-gray-600 mb-4">We monitor the "training loss" to see how well the model is learning. A lower loss means the model's predictions are getting closer to the examples in our dataset.</p>
+                        <div class="chart-container h-80">
+                            <canvas id="trainingLossChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section 4: Evaluation -->
+            <section id="evaluation">
+                <div class="text-center mb-10">
+                    <h2 class="text-3xl font-bold text-[#333333]">Stage 4: Qualitative Evaluation</h2>
+                    <p class="mt-2 text-lg text-gray-600 max-w-3xl mx-auto">Did the training work? We test our model by giving the same prompt to both the original base model and our newly fine-tuned version. The difference in their responses provides clear evidence of the adaptation.</p>
+                </div>
+                <div class="bg-white rounded-lg shadow-lg p-8">
+                    <h3 class="text-2xl font-semibold text-gray-800 mb-6 text-center">Prompt: "Explain a 'for loop' to a beginner."</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div class="bg-gray-50 p-6 rounded-lg">
+                            <h4 class="text-xl font-semibold text-gray-700 mb-3">Base Model Response</h4>
+                            <p class="text-gray-600 italic">"A for loop in Python is a control flow statement that is used to iterate over a sequence (such as a list, tuple, dictionary, set, or string). This is less like the for keyword in other programming languages, and works more like an iterator method..."</p>
+                            <div class="mt-4 text-sm font-semibold text-red-600">Analysis: Technically correct but abstract and jargon-heavy.</div>
+                        </div>
+                        <div class="bg-gray-50 p-6 rounded-lg border-2 border-[#A0AEC0]">
+                            <h4 class="text-xl font-semibold text-gray-700 mb-3">Fine-Tuned Model Response ✨</h4>
+                            <p class="text-gray-600 italic">"Think of a 'for loop' like a robot that does a task for every single item on a list. Imagine you have a shopping list: [apples, bananas, milk]. A for loop goes through them one by one... It's a way to repeat an action for each item automatically!"</p>
+                            <div class="mt-4 text-sm font-semibold text-green-600">Analysis: Uses simple analogies and a step-by-step structure, reflecting the training data.</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section 5: Deployment -->
+            <section id="deployment">
+                <div class="text-center mb-10">
+                    <h2 class="text-3xl font-bold text-[#333333]">Stage 5: Deployment as an API</h2>
+                    <p class="mt-2 text-lg text-gray-600 max-w-3xl mx-auto">A model is only useful if it can be accessed. We package our fine-tuned model into a web API. Explore the two deployment methods covered in the lab: a rapid development server and a robust production service.</p>
+                </div>
+                <div class="bg-white rounded-lg shadow-lg p-8">
+                    <div class="flex justify-center mb-8">
+                        <div class="flex bg-gray-200 rounded-full p-1">
+                            <button id="dev-btn" class="tab-button py-2 px-6 rounded-full active">Development</button>
+                            <button id="prod-btn" class="tab-button py-2 px-6 rounded-full">Production</button>
+                        </div>
+                    </div>
+                    <div id="deployment-content">
+                        <!-- Content will be injected by JS -->
+                    </div>
+                </div>
+            </section>
+
+        </main>
+
+        <footer class="text-center mt-24 pt-8 border-t border-gray-300">
+            <p class="text-gray-500">Interactive application based on the "Lab Guide: QLoRA Fine-Tuning".</p>
+        </footer>
+
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // --- Navigation Logic ---
+            const sections = document.querySelectorAll('section');
+            const navItems = document.querySelectorAll('.nav-item');
+
+            const observerOptions = {
+                root: null,
+                rootMargin: '0px',
+                threshold: 0.4
+            };
+
+            const observer = new IntersectionObserver((entries, observer) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        navItems.forEach(item => {
+                            if (item.getAttribute('href').substring(1) === entry.target.id) {
+                                item.classList.add('active');
+                            } else {
+                                item.classList.remove('active');
+                            }
+                        });
+                    }
+                });
+            }, observerOptions);
+
+            sections.forEach(section => {
+                observer.observe(section);
+            });
+
+            navItems.forEach(item => {
+                item.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    document.querySelector(this.getAttribute('href')).scrollIntoView({
+                        behavior: 'smooth'
+                    });
+                });
+            });
+
+            // --- Chart.js Tooltip Config ---
+            const tooltipCallback = {
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            title: function(tooltipItems) {
+                                const item = tooltipItems[0];
+                                let label = item.chart.data.labels[item.dataIndex];
+                                if (Array.isArray(label)) {
+                                    return label.join(' ');
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                }
+            };
+
+            // --- QLoRA Donut Chart ---
+            const qloraDonutCtx = document.getElementById('qloraDonutChart').getContext('2d');
+            new Chart(qloraDonutCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Frozen Base Model (99.48%)', 'Trainable Adapters (0.52%)'],
+                    datasets: [{
+                        data: [8020281728, 41943040],
+                        backgroundColor: ['#D1D5DB', '#6B7280'],
+                        borderColor: '#F8F7F4',
+                        borderWidth: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom' },
+                        tooltip: tooltipCallback.plugins.tooltip
+                    },
+                    cutout: '60%'
+                }
+            });
+
+            // --- Training Loss Line Chart ---
+            const trainingLossCtx = document.getElementById('trainingLossChart').getContext('2d');
+            new Chart(trainingLossCtx, {
+                type: 'line',
+                data: {
+                    labels: ['Step 1', 'Step 10', 'Step 20', 'Step 30', 'Step 40', 'Step 50', 'Step 60'],
+                    datasets: [{
+                        label: 'Training Loss',
+                        data: [1.99, 1.29, 1.01, 0.94, 0.87, 0.90, 0.85],
+                        backgroundColor: 'rgba(160, 174, 192, 0.2)',
+                        borderColor: '#A0AEC0',
+                        borderWidth: 3,
+                        pointBackgroundColor: '#6B7280',
+                        pointRadius: 5,
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: false, title: { display: true, text: 'Loss Value' } },
+                        x: { title: { display: true, text: 'Training Steps' } }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: tooltipCallback.plugins.tooltip
+                    }
+                }
+            });
+
+            // --- Deployment Tabs Logic ---
+            const devBtn = document.getElementById('dev-btn');
+            const prodBtn = document.getElementById('prod-btn');
+            const deploymentContent = document.getElementById('deployment-content');
+
+            const devContent = `
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div>
+                        <h4 class="text-xl font-semibold text-gray-800 mb-3">In-Notebook Server (FastAPI + Ngrok)</h4>
+                        <p class="text-gray-600">A temporary, public endpoint is created directly from the Colab notebook. This is perfect for rapid prototyping and interactive testing without complex setup.</p>
+                    </div>
+                    <div>
+                        <h5 class="font-semibold text-gray-700">Pros:</h5>
+                        <ul class="list-disc list-inside text-green-600 mb-4"><li>Extremely fast to set up</li><li>Ideal for debugging and immediate feedback</li></ul>
+                        <h5 class="font-semibold text-gray-700">Cons:</h5>
+                        <ul class="list-disc list-inside text-red-600"><li>Temporary and not robust</li><li>Relies on the Colab session being active</li></ul>
+                    </div>
+                </div>
+            `;
+
+            const prodContent = `
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div>
+                        <h4 class="text-xl font-semibold text-gray-800 mb-3">Production Service (Google Cloud Run)</h4>
+                        <p class="text-gray-600">For a real application, the model is packaged into a Docker container and deployed on a serverless platform that automatically scales with demand and is always available.</p>
+                    </div>
+                    <div>
+                        <h5 class="font-semibold text-gray-700">Pros:</h5>
+                        <ul class="list-disc list-inside text-green-600 mb-4"><li>Scalable, reliable, and persistent</li><li>Cost-effective (scales to zero)</li></ul>
+                        <h5 class="font-semibold text-gray-700">Cons:</h5>
+                        <ul class="list-disc list-inside text-red-600"><li>More complex setup (Dockerfile, Cloud Build)</li><li>Requires a billing-enabled cloud account</li></ul>
+                    </div>
+                </div>
+            `;
+
+            deploymentContent.innerHTML = devContent; // Initial state
+
+            devBtn.addEventListener('click', () => {
+                deploymentContent.innerHTML = devContent;
+                devBtn.classList.add('active');
+                prodBtn.classList.remove('active');
+            });
+
+            prodBtn.addEventListener('click', () => {
+                deploymentContent.innerHTML = prodContent;
+                prodBtn.classList.add('active');
+                devBtn.classList.remove('active');
+            });
+        });
+    </script>
+
+</body>
+</html>
